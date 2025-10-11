@@ -1,54 +1,77 @@
 import React, { useState } from 'react';
 import { useTasks } from '../context/TaskContext';
+import { useFormValidation, ValidatedInput, ValidatedTextarea, LoadingSpinner, Toast } from './FormValidation';
 
 const AddTask = () => {
   const { addTask } = useTasks();
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    priority: 'medium'
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const validationRules = {
+    title: {
+      required: 'Title is required',
+      minLength: 'Title must be at least 3 characters',
+      maxLength: 'Title must be less than 200 characters'
+    },
+    description: {
+      maxLength: 'Description must be less than 1000 characters'
+    }
+  };
+
+  const {
+    values: formData,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+    isValid
+  } = useFormValidation(
+    { title: '', description: '', priority: 'medium' },
+    validationRules
+  );
+
+  const handleInputChange = (name, value) => {
+    handleChange(name, value);
   };
 
   const handlePriorityChange = (priority) => {
-    setFormData(prev => ({
-      ...prev,
-      priority
-    }));
+    handleChange('priority', priority);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.title.trim()) {
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      
       addTask({
         title: formData.title.trim(),
         description: formData.description.trim(),
         priority: formData.priority,
         completed: false
       });
-      setFormData({
-        title: '',
-        description: '',
-        priority: 'medium'
-      });
+      
+      setToast({ message: 'Task created successfully!', type: 'success' });
+      resetForm();
       setIsFormVisible(false);
+    } catch (error) {
+      setToast({ message: 'Failed to create task. Please try again.', type: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleCancel = () => {
-    setFormData({
-      title: '',
-      description: '',
-      priority: 'medium'
-    });
+    resetForm();
     setIsFormVisible(false);
   };
 
@@ -74,38 +97,31 @@ const AddTask = () => {
   return (
     <section className="add-task-section">
       <form className="add-task-form" onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="title" className="form-label">
-            Task Title *
-          </label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            className="form-input"
-            placeholder="Enter task title..."
-            required
-            autoFocus
-          />
-        </div>
+        <ValidatedInput
+          name="title"
+          label="Task Title"
+          value={formData.title}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          error={errors.title}
+          touched={touched.title}
+          placeholder="Enter task title..."
+          maxLength={200}
+          required
+        />
 
-        <div className="form-group">
-          <label htmlFor="description" className="form-label">
-            Description (Optional)
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            className="form-input"
-            placeholder="Enter task description..."
-            rows="3"
-            style={{ resize: 'vertical', minHeight: '80px' }}
-          />
-        </div>
+        <ValidatedTextarea
+          name="description"
+          label="Description (Optional)"
+          value={formData.description}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          error={errors.description}
+          touched={touched.description}
+          placeholder="Enter task description..."
+          maxLength={1000}
+          rows={3}
+        />
 
         <div className="form-group">
           <label className="form-label">Priority</label>
@@ -139,18 +155,27 @@ const AddTask = () => {
             type="button"
             className="btn btn-secondary"
             onClick={handleCancel}
+            disabled={isLoading}
           >
             Cancel
           </button>
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={!formData.title.trim()}
+            disabled={!isValid || isLoading}
           >
-            Add Task
+            {isLoading ? <LoadingSpinner size="small" /> : 'Add Task'}
           </button>
         </div>
       </form>
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast(null)}
+        />
+      )}
     </section>
   );
 };

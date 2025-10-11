@@ -151,35 +151,43 @@ const TaskItem = ({ task, formatDate }) => {
   }
 
   return (
-    <div className={`task-item priority-${task.priority} ${task.completed ? 'completed' : ''}`}>
+    <div 
+      className={`task-item priority-${task.priority} ${task.completed ? 'completed' : ''}`}
+      role="listitem"
+      aria-labelledby={`task-title-${task.id}`}
+      tabIndex="0"
+    >
       <div className="task-header">
-        <div className="task-priority">
-          <span className="priority-dot"></span>
+        <div className="task-priority" aria-label={`${getPriorityLabel(task.priority)} priority task`}>
+          <span className="priority-dot" aria-hidden="true"></span>
           <span>{getPriorityLabel(task.priority)}</span>
         </div>
         <div className="task-actions">
           <button
             className={`task-complete-btn ${task.completed ? 'completed' : ''}`}
             onClick={handleToggle}
+            aria-label={task.completed ? 'Mark task as incomplete' : 'Mark task as complete'}
           >
             {task.completed ? '✓ Completed' : 'Mark Complete'}
           </button>
           <button
             className="btn btn-sm btn-secondary"
             onClick={handleEdit}
+            aria-label="Edit task"
           >
             Edit
           </button>
           <button
             className="btn btn-sm btn-danger"
             onClick={handleDelete}
+            aria-label="Delete task"
           >
             Delete
           </button>
         </div>
       </div>
 
-      <h3 className="task-title">{task.title}</h3>
+      <h3 className="task-title" id={`task-title-${task.id}`}>{task.title}</h3>
       
       {task.description && (
         <p className="task-description">{task.description}</p>
