@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="refresh" content="0; URL=./index.html" />
+  </head>
+  <body>
+    <script>
+      // SPA redirect for GitHub Pages
+      (function(){
+        var l = window.location;
+        if (l.pathname !== '/TrackToDo/' && !l.pathname.endsWith('index.html')) {
+          l.replace('/TrackToDo/' + '#/' + l.pathname.replace('/TrackToDo/', '') + l.search + l.hash);
+        }
+      })();
+    </script>
+  </body>
+  </html>
+

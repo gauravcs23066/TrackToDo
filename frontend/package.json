@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "TrackToDo - A minimal, fast, and beautiful to-do app",
   "private": true,
+  "homepage": "https://gauravcs23066.github.io/TrackToDo",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
