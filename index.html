@@ -1,9 +1,126 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="refresh" content="0; url=frontend/public/index.html" />
-  </head>
-  <body>
-  </body>
-</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Firebase Todo</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f3f4f6;margin:0}
+    .card{width:100%;max-width:600px;background:white;border-radius:12px;box-shadow:0 6px 20px rgba(15,23,42,0.08);padding:20px}
+    h1{margin:0 0 12px;font-size:20px}
+    form{display:flex;gap:8px}
+    input[type=text]{flex:1;padding:10px;border-radius:8px;border:1px solid #e5e7eb;font-size:14px}
+    button{padding:10px 14px;border-radius:8px;border:0;background:#2563eb;color:white;font-weight:600;cursor:pointer}
+    ul{list-style:none;padding:0;margin:16px 0 0;max-height:360px;overflow:auto}
+    li{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;border:1px solid #f3f4f6;margin-bottom:8px}
+    li .text{flex:1}
+    li .text.completed{text-decoration:line-through;color:#9ca3af}
+    .small{font-size:12px;color:#6b7280}
+    .btn-icon{background:transparent;border:0;cursor:pointer;padding:6px;border-radius:6px}
+    .btn-delete{color:#ef4444}
+    .meta{display:flex;gap:8px;align-items:center}
+    footer{margin-top:12px;font-size:13px;color:#6b7280}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Simple Todo (Firebase Realtime DB)</h1>
+    <form id="todo-form">
+      <input id="todo-input" type="text" placeholder="Add a new task..." autocomplete="off" />
+      <button type="submit">Add</button>
+    </form>
 
+    <ul id="todo-list"></ul>
+
+    <footer class="small">Replace the Firebase config below with yours. This example uses the Realtime Database.</footer>
+  </main>
+
+  <!-- Firebase (v8) SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <script>
+    // ----- CONFIG: replace with your Firebase project's config -----
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+    // --------------------------------------------------------------
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const todosRef = db.ref('todos');
+
+    const form = document.getElementById('todo-form');
+    const input = document.getElementById('todo-input');
+    const list = document.getElementById('todo-list');
+
+    // Add todo
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      const newTodoRef = todosRef.push();
+      newTodoRef.set({
+        text,
+        completed: false,
+        createdAt: Date.now()
+      });
+      input.value = '';
+    });
+
+    // Render list in realtime
+    todosRef.orderByChild('createdAt').on('value', snapshot => {
+      list.innerHTML = ''; // clear
+      const data = snapshot.val();
+      if (!data) return;
+      // Convert to array and sort by createdAt (ascending)
+      const items = Object.keys(data).map(key => ({ id: key, ...data[key] })).sort((a,b)=>a.createdAt - b.createdAt);
+      items.forEach(item => {
+        const li = document.createElement('li');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = !!item.completed;
+        checkbox.addEventListener('change', () => {
+          todosRef.child(item.id).update({ completed: checkbox.checked });
+        });
+
+        const span = document.createElement('div');
+        span.className = 'text' + (item.completed ? ' completed' : '');
+        span.textContent = item.text;
+
+        // delete button
+        const del = document.createElement('button');
+        del.className = 'btn-icon btn-delete small';
+        del.textContent = 'Delete';
+        del.addEventListener('click', () => {
+          if (confirm('Delete this task?')) todosRef.child(item.id).remove();
+        });
+
+        // timestamp
+        const meta = document.createElement('div');
+        meta.className = 'meta small';
+        const date = new Date(item.createdAt || 0);
+        meta.textContent = date.toLocaleString();
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(meta);
+        li.appendChild(del);
+
+        list.appendChild(li);
+      });
+    });
+
+    // OPTIONAL: handle keyboard 'Enter' when input is focused (form already handles it)
+  </script>
+</body>
+</html>
